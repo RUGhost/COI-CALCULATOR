@@ -6,6 +6,8 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   Connection,
+  Edge,
+  Node,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -13,7 +15,9 @@ import StartScreen from "./components/StartScreen";
 import MaterialSelector from "./components/MaterialSelector";
 import RecipeList from "./components/RecipeList";
 import { nodeTypes } from "./flow/nodeTypes";
-import { scaleRecipe } from "./utils/scaleRecipe";
+
+import { propagateDemands } from "./engine/demandController";
+import { EngineEdge } from "./engine/types";
 
 export default function App() {
   const [started, setStarted] = useState(false);
@@ -22,170 +26,149 @@ export default function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  // Recursive function to update upstream nodes
-  const updateUpstreamNodes = (nodeId: string, nds: any[], eds: any[]): any[] => {
-    let updatedNodes = [...nds];
-    const node = updatedNodes.find((n) => n.id === nodeId);
-    if (!node) return updatedNodes;
+  /**
+   * THE ENGINE
+   * Processes the graph and updates demands across all connected nodes.
+   */
+  const runEngine = useCallback(
+    (currentNodes: Node[], currentEdges: Edge[]) => {
+      try {
+        const engineNodes = currentNodes.map((n) => ({
+          id: n.id,
+          data: n.data,
+        }));
 
-    // For each input of this node
-    node.data.inputs.forEach((input: any, index: number) => {
-      // Find edges that provide this input
-      const incomingEdges = eds.filter(
-        (e) => e.target === nodeId && e.targetHandle === `${nodeId}-in-${index}`
-      );
+        const engineEdges: EngineEdge[] = currentEdges.map((e) => {
+          const sourceIndex = Number(e.sourceHandle?.split("-out-")[1]) || 0;
+          const sourceNode = currentNodes.find((n) => n.id === e.source);
+          const material = sourceNode?.data.outputs?.[sourceIndex]?.material?.name || "";
+          return { source: e.source, target: e.target, material };
+        });
 
-      incomingEdges.forEach((e) => {
-        const sourceNode = updatedNodes.find((n) => n.id === e.source);
-        if (!sourceNode) return;
+        const solvedNodes = propagateDemands(engineNodes, engineEdges);
 
-        const sourceIndex = Number(e.sourceHandle?.split("-out-")[1]);
-        if (isNaN(sourceIndex)) return;
-
-        const sourceOutput = sourceNode.data.outputs[sourceIndex];
-        if (!sourceOutput) return;
-
-        // Get the current demand from the target node's input
-        const targetInput = node.data.inputs[index];
-
-        // Calculate how many machines the source node needs to meet this demand
-        // For rubber maker: baseRate = 4 (produces 4 rubber per machine)
-        // Demand = 18, so machines needed = 18/4 = 4.5
-        const requiredMachines = targetInput.rate / sourceOutput.baseRate;
-
-        // Scale the source node to produce enough for the demand
-        const scaledData = scaleRecipe(
-          sourceNode.data,
-          sourceOutput.material.name,
-          sourceOutput.baseRate * requiredMachines
+        setNodes((nds) =>
+          nds.map((n) => {
+            const solved = solvedNodes.find((s) => s.id === n.id);
+            if (solved) {
+              // KEEP the existing node properties (position, type, etc)
+              // ONLY update the data object
+              return {
+                ...n,
+                data: {
+                  ...n.data,
+                  ...solved.data
+                }
+              };
+            }
+            return n; // Keep nodes even if engine doesn't return them
+          })
         );
+      } catch (err) {
+        console.error("Engine error:", err);
+      }
+    },
+    [setNodes]
+  );
 
-        if (scaledData) {
-          console.log(`Updating ${sourceNode.data.machineName} to produce ${sourceOutput.baseRate * requiredMachines} ${sourceOutput.material.name}`);
-
-          updatedNodes = updatedNodes.map((n) =>
-            n.id === sourceNode.id
-              ? { ...n, data: { ...n.data, ...scaledData } }
-              : n
+  /**
+   * MANUAL UPDATE HANDLER
+   * Triggered by buttons/inputs in CustomRecipeNode.
+   * It calculates the scale of the recipe and then runs the engine.
+   */
+ const onUpdateOutput = useCallback(
+  (nodeId: string, materialName: string, newRate: number) => {
+    setNodes((nds) => {
+      // 1. Calculate the initial change for the node being edited
+      const preSolvedNodes = nds.map((n) => {
+        if (n.id === nodeId) {
+          const baseOut = n.data.baseOutputs.find(
+            (o: any) => o.material.name === materialName
           );
+          const scale = baseOut ? newRate / baseOut.baseRate : 1;
 
-          // Recursively update further upstream (if rubber maker has its own inputs)
-          updatedNodes = updateUpstreamNodes(sourceNode.id, updatedNodes, eds);
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              machines: Number(scale.toFixed(2)),
+              inputs: n.data.baseInputs.map((i: any) => ({
+                ...i,
+                rate: Number((i.baseRate * scale).toFixed(2)),
+              })),
+              outputs: n.data.baseOutputs.map((o: any) => ({
+                ...o,
+                rate: Number((o.baseRate * scale).toFixed(2)),
+              })),
+            },
+          };
         }
+        return n;
+      });
+
+      // 2. Prepare Engine Nodes (strip ReactFlow metadata)
+      const engineNodes = preSolvedNodes.map((n) => ({
+        id: n.id,
+        data: n.data,
+      }));
+
+      // 3. Prepare Engine Edges (Add the missing 'material' property)
+      const engineEdges: EngineEdge[] = edges.map((e) => {
+        const sourceIndex = Number(e.sourceHandle?.split("-out-")[1]) || 0;
+        const sourceNode = preSolvedNodes.find((n) => n.id === e.source);
+        const material = sourceNode?.data.outputs?.[sourceIndex]?.material?.name || "";
+        
+        return { 
+          source: e.source, 
+          target: e.target, 
+          material 
+        };
+      });
+
+      // 4. Run the Engine
+      const solvedEngineNodes = propagateDemands(engineNodes, engineEdges);
+
+      // 5. Safe Merge back into ReactFlow nodes
+      return preSolvedNodes.map((originalNode) => {
+        const solved = solvedEngineNodes.find((s) => s.id === originalNode.id);
+        if (solved) {
+          return {
+            ...originalNode,
+            data: { ...originalNode.data, ...solved.data },
+          };
+        }
+        return originalNode;
       });
     });
-
-    return updatedNodes;
-  };
-
-  const updateOutputRate = (
-  id: string,
-  materialName: string,
-  value: number,
-  manualChange: boolean = true
-) => {
-  // First update the target node
-  setNodes((currentNodes) => {
-    const node = currentNodes.find((n) => n.id === id);
-    if (!node) return currentNodes;
-
-    const newData = scaleRecipe(node.data, materialName, value);
-    if (!newData) return currentNodes;
-
-    const updatedNodes = currentNodes.map((n) =>
-      n.id === id ? { ...n, data: { ...n.data, ...newData } } : n
-    );
-
-    // If manual change, propagate upstream using current edges
-    if (manualChange) {
-      // Get the latest edges directly from state
-      setEdges((currentEdges) => {
-        // Update all upstream nodes recursively
-        const propagateUpstream = (nodeId: string, nodes: any[], edges: any[]): any[] => {
-          let updated = [...nodes];
-          const targetNode = updated.find((n) => n.id === nodeId);
-          if (!targetNode) return updated;
-
-          // For each input of the target node
-          targetNode.data.inputs.forEach((input: any, index: number) => {
-            // Find connected source nodes
-            const incomingEdges = edges.filter(
-              (e) => e.target === nodeId && e.targetHandle === `${nodeId}-in-${index}`
-            );
-
-            incomingEdges.forEach((e) => {
-              const sourceNode = updated.find((n) => n.id === e.source);
-              if (!sourceNode) return;
-
-              const sourceIndex = Number(e.sourceHandle?.split("-out-")[1]);
-              if (isNaN(sourceIndex)) return;
-
-              const sourceOutput = sourceNode.data.outputs[sourceIndex];
-              if (!sourceOutput) return;
-
-              // Calculate required machines based on demand
-              const demand = targetNode.data.inputs[index].rate;
-              const requiredMachines = demand / sourceOutput.baseRate;
-              
-              // Scale the source node
-              const scaledData = scaleRecipe(
-                sourceNode.data,
-                sourceOutput.material.name,
-                sourceOutput.baseRate * requiredMachines
-              );
-
-              if (scaledData) {
-                updated = updated.map((n) =>
-                  n.id === sourceNode.id
-                    ? { ...n, data: { ...n.data, ...scaledData } }
-                    : n
-                );
-
-                // Recursively update further upstream
-                updated = propagateUpstream(sourceNode.id, updated, edges);
-              }
-            });
-          });
-
-          return updated;
-        };
-
-        // Apply all upstream updates
-        const finalNodes = propagateUpstream(id, updatedNodes, currentEdges);
-        
-        // Update nodes with all changes
-        setTimeout(() => {
-          setNodes(finalNodes);
-        }, 0);
-        
-        return currentEdges;
-      });
-    }
-
-    return updatedNodes;
-  });
-};
-
+  },
+  [edges, setNodes] // edges is needed here to map engineEdges
+);
 
   const onConnect = useCallback(
     (params: Connection) => {
-      setEdges((eds) => addEdge(params, eds));
-
-      // After connecting, update upstream nodes to satisfy the new connection
-      setNodes((nds) => {
-        const targetNode = nds.find((n) => n.id === params.target);
-        if (!targetNode) return nds;
-
-        return updateUpstreamNodes(params.target!, nds, [...edges, params]);
+      setEdges((eds) => {
+        const newEdges = addEdge(params, eds);
+        runEngine(nodes, newEdges);
+        return newEdges;
       });
     },
-    [edges]
+    [nodes, runEngine, setEdges]
   );
 
-  const deleteNode = (id: string) => {
-    setNodes((nds) => nds.filter((n) => n.id !== id));
-    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
-  };
+  const deleteNode = useCallback(
+    (id: string) => {
+      setNodes((nds) => {
+        const remainingNodes = nds.filter((n) => n.id !== id);
+        setEdges((eds) => {
+          const remainingEdges = eds.filter((e) => e.source !== id && e.target !== id);
+          runEngine(remainingNodes, remainingEdges);
+          return remainingEdges;
+        });
+        return remainingNodes;
+      });
+    },
+    [runEngine, setEdges, setNodes]
+  );
 
   if (!started) {
     return <StartScreen onStart={() => setStarted(true)} />;
@@ -203,6 +186,14 @@ export default function App() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodesDelete={(deleted) => {
+            const deletedIds = new Set(deleted.map((d) => d.id));
+            const remainingNodes = nodes.filter((n) => !deletedIds.has(n.id));
+            const remainingEdges = edges.filter(
+              (e) => !deletedIds.has(e.source) && !deletedIds.has(e.target)
+            );
+            runEngine(remainingNodes, remainingEdges);
+          }}
           deleteKeyCode="Delete"
           fitView
           isValidConnection={(connection) => {
@@ -210,14 +201,13 @@ export default function App() {
             const targetNode = nodes.find((n) => n.id === connection.target);
             if (!sourceNode || !targetNode) return false;
 
-            const sourceIndex = Number(connection.sourceHandle?.split('-out-')[1]);
-            const targetIndex = Number(connection.targetHandle?.split('-in-')[1]);
-            if (isNaN(sourceIndex) || isNaN(targetIndex)) return false;
+            const sIdx = Number(connection.sourceHandle?.split("-out-")[1]);
+            const tIdx = Number(connection.targetHandle?.split("-in-")[1]);
 
-            const sourceMaterial = sourceNode.data.outputs[sourceIndex].material.name;
-            const targetMaterial = targetNode.data.inputs[targetIndex].material.name;
+            const sMat = sourceNode.data.outputs[sIdx]?.material?.name;
+            const tMat = targetNode.data.inputs[tIdx]?.material?.name;
 
-            return sourceMaterial === targetMaterial;
+            return sMat === tMat;
           }}
         >
           <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
@@ -227,40 +217,25 @@ export default function App() {
       <RecipeList
         materialName={selectedMaterial}
         onRecipeClick={(recipe) => {
-          setNodes((ns) => [
-            ...ns,
-            {
-              id: crypto.randomUUID(),
-              type: "recipeNode",
-              position: {
-                x: 150 + ns.length * 40,
-                y: 100 + ns.length * 40,
-              },
-              data: {
-                machineName: recipe.machineName,
-                machineLogo: recipe.machineLogo,
-                baseInputs: recipe.inputs.map((i) => ({
-                  ...i,
-                  baseRate: i.rate,
-                })),
-                baseOutputs: recipe.outputs.map((o) => ({
-                  ...o,
-                  baseRate: o.rate,
-                })),
-                inputs: recipe.inputs.map((i) => ({
-                  ...i,
-                  baseRate: i.rate,
-                })),
-                outputs: recipe.outputs.map((o) => ({
-                  ...o,
-                  baseRate: o.rate,
-                })),
-                machines: 1,
-                onDelete: deleteNode,
-                onUpdateOutput: updateOutputRate,
-              },
+          const newNode = {
+            id: `node_${Date.now()}`,
+            type: "recipeNode",
+            position: { x: 400, y: 100 },
+            data: {
+              machineName: recipe.machineName,
+              machineLogo: recipe.machineLogo,
+              baseInputs: recipe.inputs.map((i: any) => ({ ...i, baseRate: i.rate })),
+              baseOutputs: recipe.outputs.map((o: any) => ({ ...o, baseRate: o.rate })),
+              inputs: recipe.inputs.map((i: any) => ({ ...i, rate: i.rate })),
+              outputs: recipe.outputs.map((o: any) => ({ ...o, rate: o.rate })),
+              machines: 1,
+              onDelete: deleteNode,
+              onUpdateOutput: onUpdateOutput, // Critical link
             },
-          ]);
+          };
+          const newNodes = [...nodes, newNode];
+          setNodes(newNodes);
+          runEngine(newNodes, edges);
         }}
       />
     </div>

@@ -60,44 +60,35 @@ export default function CustomRecipeNode({ id, data }: NodeProps) {
               <div key={i} className="io-row">
                 <div className="io-content">
                   <div className="rate-control">
+                  
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         data.onUpdateOutput(
-                          id,
+                          id, // Make sure 'id' is available from props
                           output.material.name,
-                          Math.max(0, output.rate - 1),
-                          true
+                          Math.max(0, output.rate - 1)
                         );
                       }}
                     >
                       -
                     </button>
+                    
                     <input
                       type="number"
                       value={output.rate}
-                      onClick={(e) => e.stopPropagation()}
                       onChange={(e) => {
-                        const val = parseInt(e.target.value);
+                        const val = parseFloat(e.target.value);
                         if (!isNaN(val)) {
-                          data.onUpdateOutput(
-                            id,
-                            output.material.name,
-                            val,
-                            true
-                          );
+                          data.onUpdateOutput(id, output.material.name, val);
                         }
                       }}
                     />
+
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        data.onUpdateOutput(
-                          id,
-                          output.material.name,
-                          output.rate + 1,
-                          true
-                        );
+                        data.onUpdateOutput(id, output.material.name, output.rate + 1);
                       }}
                     >
                       +
