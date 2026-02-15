@@ -1,0 +1,169 @@
+.recipe-node {
+  width: 320px;
+  min-height: 300px;
+  background: radial-gradient(circle at top, #2b2b2b, #111);
+  border: 2px solid #2ee7ff;
+  border-radius: 16px;
+  color: white;
+  font-family: system-ui, sans-serif;
+  position: relative;
+  box-shadow: 0 0 10px rgba(46, 231, 255, 0.6);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 10px;
+}
+
+.recipe-header {
+  text-align: center;
+  padding: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  font-size: 16px;
+  border-bottom: 1px solid rgba(46, 231, 255, 0.3);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 13px 13px 0 0;
+}
+
+.close-btn {
+  position: absolute;
+  right: 12px;
+  top: 9px;
+  border: 2px solid #2ee7ff;
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.5);
+  font-weight: bold;
+  z-index: 20;
+}
+
+.close-btn:hover {
+  background: rgba(46, 231, 255, 0.2);
+}
+
+.machine-image {
+  display: flex;
+  justify-content: center;
+  margin: 15px 0;
+  padding: 10px;
+}
+
+.machine-image img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.712);
+  margin: 0 16px;
+}
+
+/* INPUTS/OUTPUTS CONTAINER */
+.io-container {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  flex: 1;
+  margin-top: 10px;
+  min-height: 200px;
+}
+
+.vertical-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.712);
+  margin: 0 8px;
+}
+
+.io-section {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.io-title {
+  text-align: center;
+  opacity: 0.8;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.493);
+  margin: 0 8px 12px 8px;
+  border-radius: 4px;
+}
+
+.io-list {
+  flex: 1;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* IO ROW - CRITICAL FOR HANDLE POSITIONING */
+.io-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 6px 0;
+}
+
+/* For INPUT rows (left side) */
+.io-section:first-child .io-row {
+  justify-content: flex-start;
+  padding-left: 12px;
+}
+
+/* For OUTPUT rows (right side) */
+.io-section:last-child .io-row {
+  justify-content: flex-end;
+  padding-right: 12px;
+}
+
+.io-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Handle styling */
+.io-handle {
+  width: 12px !important;
+  height: 12px !important;
+  border: 2px solid white !important;
+  z-index: 10;
+}
+
+/* Input handles (red) */
+.io-section:first-child .io-handle {
+  background: #ff4444 !important;
+  border-color: #ff4444 !important;
+}
+
+/* Output handles (blue) */
+.io-section:last-child .io-handle {
+  background: #1ecf9a !important;
+  border-color: #1ecf9a !important;
+}
+
+.io-handle:hover {
+  transform: translateY(-50%) scale(1.3) !important;
+  transition: transform 0.2s;
+}
+
+.rate-box {
+  background: white;
+  color: black;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 6px;
+  min-width: 20px;
+  text-align: center;
+  font-size: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
