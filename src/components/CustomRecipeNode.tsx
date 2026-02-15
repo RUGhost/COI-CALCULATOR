@@ -5,9 +5,7 @@ export default function CustomRecipeNode({ id, data }: NodeProps) {
   return (
     <div className="recipe-node">
       {/* HEADER */}
-      <div className="recipe-header">
-        {data.machineName}
-      </div>
+      <div className="recipe-header">{data.machineName}</div>
 
       {/* CLOSE BUTTON */}
       <div
@@ -20,14 +18,16 @@ export default function CustomRecipeNode({ id, data }: NodeProps) {
         ✕
       </div>
 
-      {/* MACHINE IMAGE */}
-      <div className="machine-image">
-        <img src={data.machineLogo} />
+      {/* MACHINE COUNT + IMAGE */}
+      <div className="machine-image-wrapper">
+        <div className="machine-count">×{data.machines}</div>
+        <div className="machine-image">
+          <img src={data.machineLogo} alt={data.machineName} />
+        </div>
       </div>
 
       <div className="divider" />
 
-      {/* INPUTS / OUTPUTS */}
       <div className="io-container">
         {/* INPUTS */}
         <div className="io-section">
@@ -35,21 +35,14 @@ export default function CustomRecipeNode({ id, data }: NodeProps) {
           <div className="io-list">
             {data.inputs.map((input: any, i: number) => (
               <div key={i} className="io-row">
-                {/* Handle positioned at the start of the row */}
                 <Handle
                   type="target"
                   position={Position.Left}
                   id={`${id}-in-${i}`}
                   className="io-handle"
-                  style={{
-                    position: "absolute",
-                    left: -8,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                  }}
                 />
                 <div className="io-content">
-                  <img src={input.material.icon} width={28} height={28} />
+                  <img src={input.material.icon} width={24} height={24} alt={input.material.name} />
                   <div className="rate-box">{input.rate}</div>
                 </div>
               </div>
@@ -57,7 +50,6 @@ export default function CustomRecipeNode({ id, data }: NodeProps) {
           </div>
         </div>
 
-        {/* CENTER LINE */}
         <div className="vertical-divider" />
 
         {/* OUTPUTS */}
@@ -67,22 +59,58 @@ export default function CustomRecipeNode({ id, data }: NodeProps) {
             {data.outputs.map((output: any, i: number) => (
               <div key={i} className="io-row">
                 <div className="io-content">
-                  <div className="rate-box">{output.rate}</div>
-                  <img src={output.material.icon} width={28} height={28} />
+                  <div className="rate-control">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        data.onUpdateOutput(
+                          id,
+                          output.material.name,
+                          Math.max(0, output.rate - 1),
+                          true
+                        );
+                      }}
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      value={output.rate}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (!isNaN(val)) {
+                          data.onUpdateOutput(
+                            id,
+                            output.material.name,
+                            val,
+                            true
+                          );
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        data.onUpdateOutput(
+                          id,
+                          output.material.name,
+                          output.rate + 1,
+                          true
+                        );
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <img src={output.material.icon} width={24} height={24} alt={output.material.name} />
                 </div>
-                
-                {/* Handle positioned at the end of the row */}
+
                 <Handle
                   type="source"
                   position={Position.Right}
                   id={`${id}-out-${i}`}
                   className="io-handle"
-                  style={{
-                    position: "absolute",
-                    right: -8,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                  }}
                 />
               </div>
             ))}
