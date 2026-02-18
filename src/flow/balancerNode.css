@@ -1,0 +1,182 @@
+/* flow/balancerNode.css */
+.balancer-node {
+  width: 260px;
+  min-height: 220px;
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  border: 3px solid #ffaa00;
+  border-radius: 16px;
+  color: white;
+  font-family: system-ui, sans-serif;
+  position: relative;
+  box-shadow: 0 0 15px rgba(255, 170, 0, 0.3);
+  padding: 12px;
+  overflow: visible;
+  z-index: 10;
+}
+
+.balancer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ffaa00;
+  margin-bottom: 12px;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.balancer-header .close-btn {
+  background: none;
+  border: 1px solid #ffaa00;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  padding: 2px 8px;
+}
+
+.balancer-header .close-btn:hover {
+  background: rgba(255, 170, 0, 0.2);
+}
+
+.balancer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.material-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: #333;
+  border-radius: 8px;
+  min-height: 48px;
+}
+
+.material-display img {
+  border-radius: 4px;
+  background: #444;
+  padding: 4px;
+}
+
+.material-name {
+  font-weight: bold;
+  color: #ffaa00;
+}
+
+.material-pending {
+  color: #888;
+  font-style: italic;
+  width: 100%;
+  text-align: center;
+}
+
+.port-stats {
+  display: flex;
+  justify-content: space-around;
+  font-size: 14px;
+  color: #ffaa00;
+  background: #333;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+/* Port containers - FIXED POSITIONING */
+.ports-left {
+  position: absolute;
+  left: -35px;
+  top: 80px;
+  width: 70px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.ports-right {
+  position: absolute;
+  right: -35px;
+  top: 80px;
+  width: 70px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.port-row {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.port-row.right {
+  justify-content: flex-end;
+}
+
+/* Handle styling */
+.balancer-handle {
+  width: 16px !important;
+  height: 16px !important;
+  background: #ffaa00 !important;
+  border: 2px solid white !important;
+  border-radius: 50% !important;
+  position: relative !important;
+  pointer-events: all !important;
+  z-index: 9999 !important;
+  transform: none !important;
+  cursor: crosshair !important;
+}
+
+.balancer-handle.material-set {
+  background: #4caf50 !important;
+}
+
+.balancer-handle.connected {
+  background: #f44336 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
+
+.balancer-handle:hover:not(.connected) {
+  transform: scale(1.3) !important;
+  transition: transform 0.2s;
+  background: #ffc107 !important;
+}
+
+/* Port labels */
+.port-label {
+  font-size: 11px;
+  color: #ccc;
+  white-space: nowrap;
+  margin-left: 20px;
+  pointer-events: none;
+  background: rgba(0,0,0,0.7);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.port-row.right .port-label {
+  margin-left: 0;
+  margin-right: 20px;
+}
+
+.port-status {
+  color: #f44336;
+  font-size: 16px;
+  margin-left: 5px;
+  pointer-events: none;
+  text-shadow: 0 0 3px black;
+}
+
+/* Footer */
+.balancer-footer {
+  margin-top: 16px;
+  padding-top: 8px;
+  border-top: 1px solid #444;
+  text-align: center;
+  color: #888;
+  font-size: 11px;
+}

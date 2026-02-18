@@ -11,7 +11,20 @@
   display: flex;
   flex-direction: column;
   padding-bottom: 10px;
-   overflow: visible !important;     /* Ensure handles are visible outside */
+  overflow: visible !important;
+}
+
+/* Locked mode styling */
+.recipe-node.locked-mode {
+  opacity: 0.9;
+  border-color: #666;
+  box-shadow: 0 0 5px rgba(102, 102, 102, 0.6);
+}
+
+/* Unlocked mode styling */
+.recipe-node.unlocked-mode {
+  border-color: #4caf50;
+  box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);
 }
 
 .recipe-header {
@@ -23,6 +36,54 @@
   border-bottom: 1px solid rgba(46, 231, 255, 0.3);
   background: rgba(0, 0, 0, 0.2);
   border-radius: 13px 13px 0 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-left {
+  position: absolute;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lock-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  z-index: 25;
+}
+
+.lock-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.lock-toggle.locked {
+  color: #ffaa00;
+}
+
+.lock-toggle.locked:hover {
+  color: #ffbb33;
+}
+
+.lock-toggle.unlocked {
+  color: #4caf50;
+}
+
+.lock-toggle.unlocked:hover {
+  color: #66bb6a;
+}
+
+.machine-name {
+  font-weight: 600;
 }
 
 .close-btn {
@@ -98,21 +159,21 @@
   align-items: center;
   min-height: 40px;
   padding: 6px 0;
-  overflow: visible !important;     /* Don't clip handles */
+  overflow: visible !important;
 }
 
-/* For INPUT rows (left side) - adjusted for border alignment */
+/* For INPUT rows (left side) */
 .io-section:first-child .io-row {
   justify-content: flex-start;
-  padding-left: 0;        /* Remove padding so handle can align with border */
-  margin-left: 12px;      /* Add space for content after the handle */
+  padding-left: 0;
+  margin-left: 12px;
 }
 
-/* For OUTPUT rows (right side) - adjusted for border alignment */
+/* For OUTPUT rows (right side) */
 .io-section:last-child .io-row {
   justify-content: flex-end;
-  padding-right: 0;       /* Remove padding so handle can align with border */
-  margin-right: 12px;     /* Add space for content before the handle */
+  padding-right: 0;
+  margin-right: 12px;
 }
 
 .io-content {
@@ -127,28 +188,27 @@
   height: 12px !important;
   background: #ff4444 !important;
   border: 2px solid white !important;
-  z-index: 9999 !important;         /* High z-index to ensure visibility */
+  z-index: 9999 !important;
   border-radius: 2px !important;
-  /* Make sure it's not being clipped */
   pointer-events: all !important;
 }
 
-/* Input handles (red) - aligned with left border */
+/* Input handles (red) */
 .io-section:first-child .io-handle {
   background: #ff4444 !important;
   border-color: #ff4444 !important;
   position: absolute !important;
-  left: -32px !important;   /* Negative offset to align with node border */
+  left: -32px !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
 }
 
-/* Output handles (blue) - aligned with right border */
+/* Output handles (blue) */
 .io-section:last-child .io-handle {
   background: #1ecf9a !important;
   border-color: #1ecf9a !important;
   position: absolute !important;
-  right: -32px !important;  /* Negative offset to align with node border */
+  right: -32px !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
 }
@@ -158,18 +218,18 @@
   transition: transform 0.2s;
 }
 
-/* Standardized rate-box styling - 16px height, 40px width */
+/* Standardized rate-box styling */
 .rate-box {
   background: white;
   color: black;
   font-weight: 700;
-  width: 40px;           /* Fixed width 40px */
-  height: 16px;          /* Fixed height 16px */
-  padding: 0;            /* Remove padding to maintain exact dimensions */
+  width: 40px;
+  height: 16px;
+  padding: 0;
   border-radius: 6px;
   text-align: center;
   font-size: 14px;
-  line-height: 16px;     /* Match height for vertical centering */
+  line-height: 16px;
   border: 1px solid rgba(0, 0, 0, 0.1);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   display: inline-block;
@@ -196,7 +256,7 @@
   width: 90px;
   height: 90px;
   object-fit: contain;
-  margin: 0 auto;           /* Ensure image is centered */
+  margin: 0 auto;
 }
 
 .machine-count {
@@ -207,11 +267,12 @@
   padding: 4px 8px;
   border-radius: 6px;
   border: 1px solid #00ff9c;
-  margin-right: auto;       /* Push to the left */
+  margin-right: auto;
   position: absolute;
   left: 0;
 }
 
+/* Rate control styling */
 .rate-control {
   display: flex;
   align-items: center;
@@ -220,16 +281,32 @@
 }
 
 .rate-control input {
-  width: 40px;           /* Fixed width 40px */
-  height: 16px;          /* Fixed height 16px */
+  width: 40px;
+  height: 16px;
   text-align: center;
   border: 1px solid #333;
   border-radius: 4px;
   background: #fff;
   font-weight: bold;
-  padding: 0;            /* Remove padding */
-  line-height: 16px;     /* Match height */
-  box-sizing: border-box; /* Include border in dimensions */
+  padding: 0;
+  line-height: 16px;
+  box-sizing: border-box;
+}
+
+/* Locked input styling */
+.rate-control input.locked-input,
+.rate-control input:read-only {
+  background-color: #444;
+  color: #ccc;
+  border-color: #666;
+  cursor: not-allowed;
+}
+
+/* Unlocked input styling */
+.rate-control input.unlocked-input {
+  background-color: #e8f5e9;
+  color: #000;
+  border-color: #4caf50;
 }
 
 .rate-control button {
@@ -246,18 +323,80 @@
   cursor: pointer;
   padding: 0;
   line-height: 1;
-  box-sizing: border-box; /* Include border in dimensions */
+  box-sizing: border-box;
 }
 
-/* Hide number input arrows in Chrome, Edge, Safari */
+.rate-control button.disabled-button,
+.rate-control button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  color: #666;
+}
+
+.rate-control button.disabled-button:hover,
+.rate-control button:disabled:hover {
+  background: #111;
+}
+
+.rate-control button:hover {
+  background: #333;
+}
+
+/* Hide number input arrows */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Hide number input arrows in Firefox */
 input[type=number] {
   appearance: textfield;
   -moz-appearance: textfield;
+}
+
+/* Mode indicators */
+.lock-indicator {
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #666;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  border: 1px solid #888;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  z-index: 30;
+}
+
+.unlock-indicator {
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #4caf50;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  border: 1px solid #66bb6a;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  z-index: 30;
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+  .lock-indicator,
+  .unlock-indicator {
+    font-size: 10px;
+    padding: 2px 8px;
+    bottom: -20px;
+  }
 }
